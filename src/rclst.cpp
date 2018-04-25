@@ -3,14 +3,7 @@
 
 #include <iostream>
 
-#include <boost/tokenizer.hpp>
-
-#include <dlib/clustering.h>
-
 #include "common.h"
-
-using kernel_t = dlib::radial_basis_kernel<sample_t>;
-// using ovo_trainer = dlib::one_vs_one_trainer<dlib::any_trainer<sample_t>>;
 
 int main(int argc, char** argv)
 {
@@ -23,31 +16,48 @@ int main(int argc, char** argv)
     size_t N = std::stol(argv[1]);
     std::string modelfname{argv[2]};
 
-    samples_t samples{std::move(read_samples(std::cin))};
+    auto sample_parse = [](const strings_t& tokens) {
+        sample_t s;
+        for(size_t n = 0; n < 6; ++n)
+            s(n) = tokens[n].empty() ? 0.0 : std::stod(tokens[n]);
+        size_t floor = tokens[6].empty() ? 0 : std::stoul(tokens[6]);
+        size_t floor_max = tokens[7].empty() ? 0 : std::stoul(tokens[7]);
+        s(6) = floor == 0 || floor == floor_max ? 0.0 : 1.0;
+        return std::move(s);
+    };
+    samples_t samples{std::move(read_data(std::cin, 8, sample_parse))};
     samples_t centers;
 
-    dlib::kcentroid<kernel_t> kc(kernel_t(0.1),0.01, 8);
+    dlib::kcentroid<kernel_t> kc(kernel_t(),0.01, 8);
     dlib::kkmeans<kernel_t> kkm(kc);
     kkm.set_number_of_centers(N);
+
     dlib::pick_initial_centers(kkm.number_of_centers(), centers, samples, kkm.get_kernel());
+    dlib::find_clusters_using_kmeans(samples, centers);
 
-    std::cerr << "Resolve clusters" << std::endl;
     kkm.train(samples,centers);
-    std::cerr << "\tResolved" << std::endl;
 
-    std::cerr << "Assign clusters" << std::endl;
-    std::vector<double> assignments;
-    assignments.resize(samples.size());
+    std::vector<double> labels;
+    labels.resize(samples.size());
     for(size_t n = 0; n < samples.size(); ++n)
-        assignments[n] = kkm(samples[n]);
-    std::cerr << "\tAssigned" << std::endl;
+        labels[n] = kkm(samples[n]);
 
-    // std::cerr << "Train model" << std::endl;
-    // ovo_trainer trainer
-    // std::cerr << "\tTrained" << std::endl;
+    ovo_trainer_t ovo_trainer;
+    dlib::krr_trainer<kernel_t> linear_trainer;
+    ovo_trainer.set_trainer(linear_trainer);
 
-    for(size_t n = 0; n < assignments.size(); ++n)
-        std::cout << n << "\t" << assignments[n] << std::endl;
+    ovo_df_t ovo_df = ovo_trainer.train(samples, labels);
+
+    for(size_t n = 0; n < samples.size(); ++n) {
+        sample_t& s = samples[n];
+        size_t label = size_t(ovo_df(samples[n]));
+        std::cout << n << ';' << size_t(labels[n]) << ';' << label;
+        for(size_t m = 0; m < s.size(); ++m)
+            std::cout << ';' << s(m);
+        std::cout << '\n';
+    }
+
+    dlib::serialize(modelfname) << samples << ovo_df;
 
     return 0;
 }
