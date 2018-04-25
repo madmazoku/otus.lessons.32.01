@@ -1,0 +1,24 @@
+language: cpp
+before_script:
+- sudo apt-get install libboost-all-dev -y
+- echo "deb http://archive.ubuntu.com/ubuntu xenial main universe" | sudo tee -a /etc/apt/sources.list
+- sudo apt-get update -qq
+- sudo apt-get install libopenblas-dev -y
+- sudo apt-get install libpng-dev -y
+- git clone https://github.com/davisking/dlib
+- cd dlib
+- mkdir build
+- cd build
+- cmake ..
+- sudo make install
+- cd ../..
+script:
+- mkdir bin
+- cd bin
+- cmake ../src
+- make all
+- make package
+deploy:
+  provider: script
+  skip_cleanup: true
+  script: curl -T realty-0.0.$TRAVIS_BUILD_NUMBER-Linux.deb -umadmazoku:$BINTRAY_API_KEY "https://api.bintray.com/content/madmazoku/otus.lessons/32.01/$TRAVIS_BUILD_NUMBER/realty-0.0.$TRAVIS_BUILD_NUMBER-Linux.deb;deb_distribution=trusty;deb_component=main;deb_architecture=amd64;publish=1"
