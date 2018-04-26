@@ -41,11 +41,11 @@ int main(int argc, char** argv)
         sample_t& q = questions[n];
         size_t label = size_t(ovo_df(q));
         cluster_samples_t& cluster = clusters[label];
-        std::sort(cluster.begin(), cluster.end(), 
-            [q](const cluster_sample_t& a, const cluster_sample_t& b) {
-                return length(q-std::get<1>(a)) < length(q-std::get<1>(b));
-            }
-        );
+        std::sort(cluster.begin(), cluster.end(),
+        [q](const cluster_sample_t& a, const cluster_sample_t& b) {
+            return length(q-std::get<1>(a)) < length(q-std::get<1>(b));
+        }
+                 );
 
         for(auto& c : cluster)
             std::cout << n << ';' << std::get<0>(c) << '\n';

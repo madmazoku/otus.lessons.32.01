@@ -19,7 +19,8 @@ using kernel_t = dlib::linear_kernel<sample_t>;
 using ovo_trainer_t = dlib::one_vs_one_trainer<dlib::any_trainer<sample_t>>;
 using ovo_df_t = dlib::one_vs_one_decision_function<ovo_trainer_t, dlib::decision_function<kernel_t>>;
 
-samples_t read_data(std::istream& in, size_t tokens_size, std::function<sample_t (const strings_t&)> parse) {
+samples_t read_data(std::istream& in, size_t tokens_size, std::function<sample_t (const strings_t&)> parse)
+{
     std::string line;
     strings_t tokens;
     samples_t samples;
