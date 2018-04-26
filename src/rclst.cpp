@@ -48,16 +48,7 @@ int main(int argc, char** argv)
 
     ovo_df_t ovo_df = ovo_trainer.train(samples, labels);
 
-    for(size_t n = 0; n < samples.size(); ++n) {
-        sample_t& s = samples[n];
-        size_t label = size_t(ovo_df(samples[n]));
-        std::cout << n << ';' << size_t(labels[n]) << ';' << label;
-        for(size_t m = 0; m < s.size(); ++m)
-            std::cout << ';' << s(m);
-        std::cout << '\n';
-    }
-
-    dlib::serialize(modelfname) << samples << ovo_df;
+    dlib::serialize(modelfname) << samples << labels << ovo_df;
 
     return 0;
 }
