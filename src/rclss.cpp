@@ -60,10 +60,12 @@ int main(int argc, char** argv)
                     std::cout << size_t(o(n));
                     break;
                 case Float2:
-                    std::cout << std::fixed << std::setprecision(2) << o(n) << std::setprecision(default_precision) << std::defaultfloat;
+                    std::cout << std::fixed << std::setprecision(2) << o(n) << std::setprecision(default_precision);
+                    std::cout.unsetf(std::ios_base::floatfield);
                     break;
                 case Float6:
-                    std::cout << std::fixed << std::setprecision(6) << o(n) << std::setprecision(default_precision) << std::defaultfloat;
+                    std::cout << std::fixed << std::setprecision(6) << o(n) << std::setprecision(default_precision);
+                    std::cout.unsetf(std::ios_base::floatfield);
                     break;
                 }
             }
