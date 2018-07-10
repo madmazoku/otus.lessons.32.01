@@ -12,18 +12,21 @@
 #include <dlib/matrix.h>
 
 using strings_t = std::vector<std::string>;
+using original_t = dlib::matrix<double,8,1>;
 using sample_t = dlib::matrix<double,7,1>;
+using originals_t = std::vector<original_t>;
 using samples_t = std::vector<sample_t>;
 
 using kernel_t = dlib::linear_kernel<sample_t>;
 using ovo_trainer_t = dlib::one_vs_one_trainer<dlib::any_trainer<sample_t>>;
 using ovo_df_t = dlib::one_vs_one_decision_function<ovo_trainer_t, dlib::decision_function<kernel_t>>;
 
-samples_t read_data(std::istream& in, size_t tokens_size, std::function<sample_t (const strings_t&)> parse)
+template<typename T>
+std::vector<T> read_data(std::istream& in)
 {
     std::string line;
     strings_t tokens;
-    samples_t samples;
+    std::vector<T> ts;
     boost::char_separator<char> sep{";\n", " ", boost::keep_empty_tokens};
     size_t count = 0;
     while(std::getline(in, line)) {
@@ -32,16 +35,33 @@ samples_t read_data(std::istream& in, size_t tokens_size, std::function<sample_t
 
         tokens.clear();
         std::copy( tok.begin(), tok.end(), std::back_inserter(tokens) );
-        if(tokens.size() != tokens_size) {
+        if(tokens.size() != T::NR) {
             std::cerr << "invalid line " << count << ", tokens found: " << tokens.size() << "; '" << line << "'" << std::endl;
             for(auto& t : tokens)
                 std::cout << "\t" << t << std::endl;
             continue;
         }
 
-        samples.emplace_back(std::move(parse(tokens)));
+        T t;
+        for(size_t n = 0; n < T::NR; ++n)
+            t(n) = tokens[n].empty() ? 0.0 : std::stod(tokens[n]);
+
+        ts.emplace_back(std::move(t));
     }
 
-    return std::move(samples);
+    return std::move(ts);
 }
 
+samples_t sample_data(const originals_t& originals)
+{
+    samples_t samples;
+    auto transform = [](const original_t& o) {
+        sample_t s;
+        for(size_t n = 0; n < sample_t::NR - 1; ++n)
+            s(n) = o(n);
+        s(sample_t::NR - 1) = o(original_t::NR - 2) == 0 || o(original_t::NR - 2) == o(original_t::NR - 1);
+        return std::move(s);
+    };
+    std::transform(originals.begin(), originals.end(), std::back_inserter(samples), transform);
+    return std::move(samples);
+}
